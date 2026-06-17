@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 
 def center_digit(img):
+    """Центрування цифри"""
     M = cv2.moments(img)
     if M['m00'] > 0:
         cx = int(M['m10'] / M['m00'])
@@ -15,30 +16,43 @@ def center_digit(img):
     return img
 
 def preprocess_image(img_input):
+    """
+    Повна передобробка зображення.
+    """
     if isinstance(img_input, Image.Image):
         img = np.array(img_input.convert('L'))
     else:
         img = img_input
 
+    # інверсія для фото (якщо фон світлий)
     if np.mean(img) > 127:
         img = 255 - img
         
+    # пошук контурів
     cnts, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if len(cnts) > 0:
         cnt = max(cnts, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(cnt)
         digit = img[y:y+h, x:x+w]
+        
+        # додаємо відступи
         size = max(w, h) + 40
         pad_img = np.zeros((size, size), dtype="uint8")
         dx, dy = (size - w) // 2, (size - h) // 2
         pad_img[dy:dy+h, dx:dx+w] = digit
         img = pad_img
 
+    # ресайзинг та покращення
     img_28 = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
     img_28 = center_digit(img_28)
+    
+    # Гауссове розмиття та поріг
     img_28 = cv2.GaussianBlur(img_28, (3, 3), 0)
     _, img_28 = cv2.threshold(img_28, 50, 255, cv2.THRESH_BINARY)
+    img_28 = cv2.GaussianBlur(img_28, (3, 3), 0)
+
+    # підготовка тензора
+    img_array = img_28.astype('float32') 
+    img_array = np.expand_dims(img_array, axis=(0, -1))
     
-    # повертаємо нормалізований тензор (1, 28, 28, 1)
-    img_array = img_28.astype('float32') / 255.0
-    return np.expand_dims(img_array, axis=(0, -1))
+    return img_array
