@@ -1,0 +1,14 @@
+tensorflow>=2.15.0
+streamlit
+streamlit-drawable-canvas
+opencv-python-headless
+numpy
+pandas
+pillow
+python-dotenv
+pytest
+pytest-cov
+flake8
+matplotlib
+seaborn
+scikit-learn

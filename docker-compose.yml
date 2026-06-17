@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  mnist-app:
+    build: .
+    image: mnist-recognition:latest
+    ports:
+      - "8501:8501"
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    environment:
+      - PYTHONUNBUFFERED=1

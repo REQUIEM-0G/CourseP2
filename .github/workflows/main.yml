@@ -1,0 +1,56 @@
+name: MNIST Digit Recognition CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  continuous-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov flake8 opencv-python-headless tensorflow pandas pillow python-dotenv streamlit
+
+      - name: Create fake model for tests
+        run: |
+          mkdir -p model
+          python -c "import tensorflow as tf; model = tf.keras.Sequential([tf.keras.layers.Input(shape=(28,28,1)), tf.keras.layers.Flatten(), tf.keras.layers.Dense(10, activation='softmax')]); model.save('model/mnist_model.h5')"
+
+      - name: Code Linting (flake8)
+        run: flake8 . --count --exit-zero --max-line-length=120 --statistics
+
+      - name: Model Integrity Check
+        run: python check_model.py
+
+      - name: Unit & Integration Tests
+        run: |
+          PYTHONPATH=. pytest tests/ --cov=utils --cov-report=term-missing
+
+  docker-smoke-test:
+    needs: continuous-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Docker Build Test
+        run: |
+          docker build -t mnist-test:latest .
+          echo "Docker image built successfully"
