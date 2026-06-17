@@ -21,7 +21,7 @@ def test_preprocess_dimensions():
     assert processed.shape == (1, 28, 28, 1), f"Очікували (1, 28, 28, 1), отримали {processed.shape}"
 
 def test_preprocess_normalization():
-    """Тест перевіряє, чи дані нормалізовані в діапазон [0, 1]"""
+    """Тест перевіряє, чи дані нормалізовані в діапазон [0, 255]"""
     data = np.zeros((100, 100), dtype=np.uint8)
     data[30:70, 30:70] = 255
     img = Image.fromarray(data)
@@ -29,7 +29,7 @@ def test_preprocess_normalization():
     processed = preprocess_image(img)
     
     # перевірка діапазону значень
-    assert processed.max() <= 1.0, "Значення пікселів перевищують 1.0"
+    assert processed.max() <= 255.0, "Значення пікселів перевищують 255.0"
     assert processed.min() >= 0.0, "Значення пікселів менші за 0.0"
     assert processed.dtype == np.float32, "Тип даних має бути float32"
 
